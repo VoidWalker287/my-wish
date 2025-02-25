@@ -128,7 +128,7 @@ command commands[] = {
         {"path", &w_path},
         {"pwd",  &w_pwd},
         {"pp",   &w_pp},
-        {NULL , &w_extern} // final command will always
+        {NULL , &w_extern} // final command will always check external commands
 };
 
 // searches for builtin and external commands, returns true on successful execution
