@@ -23,18 +23,31 @@ int main(int argc, char *argv[]) {
     size_t line_len = MAX_LINE_LENGTH;
     char *args[MAX_ARGUMENTS];
     while (getline(&line, &line_len, input_file) != EOF) {
+        line[strlen(line) - 1] = '\0';
+
+        // check for redirection
+        int redirect_status = w_redirect(&line);
+
         // parse line into array of arguments
         char *current_arg;
         int num_args = 0;
-        line[strlen(line) - 1] = '\0';
         while ((current_arg = strsep(&line, COMMAND_DELIM)) != NULL) {
             args[num_args] = current_arg;
             num_args++;
         }
         // search and execute commands
-        if (!w_execute(args, num_args)) {
+        if (redirect_status == REDIRECT_BAD || !w_execute(args, num_args)) {
             print_err();
         }
+
+        // restore redirect
+        if (redirect_status == REDIRECT_GOOD) {
+            if (num_args == 0) {
+                print_err();
+            }
+            w_restore();
+        }
+
         // print prompt in interactive mode
         if (argc == 1) {
             shell_prompt(shell_name);

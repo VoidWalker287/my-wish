@@ -22,11 +22,7 @@ bool w_exit(char *args[], int num_args) {
 
 // change the current working directory
 bool w_cd(char *args[], int num_args) {
-    if (num_args != 2) {
-        return false;
-    }
-    int res = chdir(args[1]);
-    return res == 0;
+    return num_args == 2 && chdir(args[1]) == 0;
 }
 
 // set the path
