@@ -9,12 +9,13 @@
 #define REDIRECT_CHAR '>'
 #define REDIRECT_NONE   0
 #define REDIRECT_GOOD   1
-#define REDIRECT_BAD    2
+#define REDIRECT_BAD    (-1)
 
 void set_shell_name(char **name, char *arg);
 void shell_prompt(char *name);
 void print_err();
-int w_redirect(char **line);
+bool is_delim(char c);
+int w_redirect(char *line);
 int w_restore(void);
 
 #endif //WISH_MAIN_UTILS_H

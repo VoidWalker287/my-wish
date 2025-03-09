@@ -21,6 +21,7 @@ void print_err() {
     fprintf(stderr, "An error has occurred\n");
 }
 
+// determine if a character is a delimiter for manual trimming
 bool is_delim(char c) {
     char *delims = COMMAND_DELIM;
     size_t len = strlen(COMMAND_DELIM);
@@ -33,36 +34,56 @@ bool is_delim(char c) {
 }
 
 // perform output redirection
-int w_redirect(char **line) {
-    // check for one occurrence redirection character
-    char *found = strchr(*line, REDIRECT_CHAR);
-    if (!found) {
+int w_redirect(char *line) {
+    char *redirect = strchr(line, REDIRECT_CHAR);
+    if (!redirect) {
         return REDIRECT_NONE;
-    } else if (strlen(found) == 1 || strchr(found + 1, REDIRECT_CHAR)) {
+    } else if (strlen(redirect) < 2 || strchr(redirect + 1, REDIRECT_CHAR)) {
         return REDIRECT_BAD;
     }
 
-    // split and trim line and file name
-    char *file_line = found + 1;
-    while (is_delim(*file_line)) file_line++;
-    while(is_delim(*(found - 1))) found--;
-    *found = '\0';
-    char *file_name = strsep(&file_line, COMMAND_DELIM);
+    char *file_name = redirect + 1;
 
-    // check for invalid file
-    if (file_line) {
+    // trim arguments whitespace
+    while (redirect > line && is_delim(*(redirect - 1))) {
+        redirect--;
+    }
+    if (redirect == line) {
+        return REDIRECT_BAD;
+    }
+    *redirect = '\0';
+
+    // trim file name leading whitespace
+    while (strlen(file_name) && is_delim(*file_name)) {
+        file_name++;
+    }
+    // trim file name trailing whitespace
+    char *file_end = file_name + strlen(file_name) - 1;
+    while (file_end > file_name && is_delim(*(file_end - 1))) {
+        file_end--;
+    }
+    *file_end = '\0';
+
+    if (!strlen(file_name)) {
         return REDIRECT_BAD;
     }
 
-    // replace stdout file descriptor with output file
-    int output_fd = fileno(fopen(file_name, "w"));
-    if (output_fd == -1) {
-        return REDIRECT_BAD;
+    // check for whitespace in file name (bad redirect call)
+    for (int i = 0; i < strlen(file_name); i++) {
+        if (is_delim(file_name[i])) {
+            return REDIRECT_BAD;
+        }
     }
+
+    // perform redirect
     std_out_copy = dup(STDOUT_FILENO);
-    int res = dup2(output_fd, STDOUT_FILENO);
-    close(output_fd);
-    return (res != -1) ? REDIRECT_GOOD : REDIRECT_BAD;
+    int redirect_fd = fileno(fopen(file_name, "w"));
+    if (redirect_fd == -1) {
+        return REDIRECT_BAD;
+    }
+    int res = dup2(redirect_fd, STDOUT_FILENO);
+    close(redirect_fd);
+    return (res == -1) ? REDIRECT_BAD : REDIRECT_GOOD;
 }
 
 // restore original file descriptor for stdout
